@@ -21,16 +21,20 @@ public class WhatsappController {
 
     //Autowire will not work in this case, no need to change this and add autowire
     WhatsappService whatsappService = new WhatsappService();
-
     @PostMapping("/add-user")
-    public String createUser(String name, String mobile) throws Exception {
+      public String createUser(String name, String mobile) throws Exception {
         //If the mobile number exists in database, throw "User already exists" exception
         //Otherwise, create the user and return "SUCCESS"
 
-        return whatsappService.createUser(name, mobile);
+        String ans =  whatsappService.createUser(name, mobile);
+         if(ans == null){
+             throw new Exception("User already exists");
+         }
+        else{
+            return ans;
+         }
     }
-
-    @PostMapping("/add-group")
+@PostMapping ("/add-group")
     public Group createGroup(List<User> users){
         // The list contains at least 2 users where the first user is the admin. A group has exactly one admin.
         // If there are only 2 users, the group is a personal chat and the group name should be kept as the name of the second user(other than admin)
@@ -58,16 +62,36 @@ public class WhatsappController {
         //Throw "You are not allowed to send message" if the sender is not a member of the group
         //If the message is sent successfully, return the final number of messages in that group.
 
-        return whatsappService.sendMessage(message, sender, group);
+        int data = whatsappService.sendMessage(message, sender, group);
+        if(data == -1){
+            throw new Exception("Group does not exist");
+        }
+        else if(data == -2){
+            throw new Exception("You are not allowed to send message");
+        }
+        return data;
     }
     @PutMapping("/change-admin")
     public String changeAdmin(User approver, User user, Group group) throws Exception{
+
         //Throw "Group does not exist" if the mentioned group does not exist
         //Throw "Approver does not have rights" if the approver is not the current admin of the group
+        //Throw "Approver does not have rights" if the user is not a part of the group
         //Throw "User is not a participant" if the user is not a part of the group
         //Change the admin of the group to "user" and return "SUCCESS". Note that at one time there is only one admin and the admin rights are transferred from approver to user.
 
-        return whatsappService.changeAdmin(approver, user, group);
+       String st = whatsappService.changeAdmin(approver, user, group);
+       if(st.equals("Group does not exist")){
+           throw new Exception("Group does not exist");
+       }
+       else if (st.equals("not the current admin")){
+           throw new Exception("Approver does not have rights");
+       }
+       else if(st.equals("user is not a part of the group")){
+           throw new Exception("User is not a participant");
+       }
+       else
+           return st ;
     }
 
     @DeleteMapping("/remove-user")
@@ -79,7 +103,15 @@ public class WhatsappController {
         //If user is not the admin, remove the user from the group, remove all its messages from all the databases, and update relevant attributes accordingly.
         //If user is removed successfully, return (the updated number of users in the group + the updated number of messages in group + the updated number of overall messages)
 
-        return whatsappService.removeUser(user);
+        int res =  whatsappService.removeUser(user);
+        if(res == -1){
+            throw new Exception("User not found");
+        }
+        else if(res == -2){
+            throw new Exception("Cannot remove admin");
+        }
+        else
+            return res;
     }
 
     @GetMapping("/find-messages")
@@ -88,6 +120,11 @@ public class WhatsappController {
         // Find the Kth latest message between start and end (excluding start and end)
         // If the number of messages between given time is less than K, throw "K is greater than the number of messages" exception
 
-        return whatsappService.findMessage(start, end, K);
+        String sd = whatsappService.findMessage(start, end, K);
+        if(sd.equals("K is greater than the number of messages")){
+            throw new Exception("K is greater than the number of messages");
+        }
+        else
+            return sd;
     }
 }
